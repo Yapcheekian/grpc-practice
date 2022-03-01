@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/Yapcheekian/grpc-practice/greet/greetpb"
@@ -19,14 +20,37 @@ func main() {
 
 	c := greetpb.NewGreetServiceClient(conn)
 
+	// Unary
 	res, err := c.Greet(context.Background(), &greetpb.GreetRequest{
 		Greeting: &greetpb.Greeting{
 			FirstName: "yap",
 		},
 	})
 	if err != nil {
-		log.Fatalf("failed to greet unary: %v", err)
+		log.Fatalf("failed to greet unary: %v\n", err)
 	}
 
-	fmt.Println(res)
+	fmt.Println("unary: ", res)
+
+	// Streaming server
+	stream, err := c.GreetManyTimes(context.Background(), &greetpb.GreetManyTimesRequest{
+		Greeting: &greetpb.Greeting{
+			FirstName: "yap",
+		},
+	})
+	if err != nil {
+		log.Fatalf("failed to greet server streaming: %v\n", err)
+	}
+
+	for {
+		msg, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatalf("faild to receive stream: %v\n", err)
+		}
+
+		fmt.Println("steam: ", msg)
+	}
 }
