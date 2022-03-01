@@ -51,7 +51,7 @@ func (*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
 					Result: result,
 				})
 			}
-			log.Fatalf("failed to receive client stream: %v\n", err)
+			log.Printf("failed to receive client stream: %v\n", err)
 			return err
 		}
 
@@ -60,16 +60,39 @@ func (*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
 	}
 }
 
+func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) error {
+	for {
+		req, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			log.Printf("failed to receive bidi client stream: %v\n", err)
+			return err
+		}
+
+		firstName := req.GetGreeting().FirstName
+		result := "Hello " + firstName
+
+		res := &greetpb.GreetEveryoneResponse{
+			Result: result,
+		}
+		if err := stream.Send(res); err != nil {
+			return err
+		}
+	}
+}
+
 func main() {
 	l, err := net.Listen("tcp", ":50052")
 	if err != nil {
-		log.Fatalf("failed to listen: %v\n", err)
+		log.Printf("failed to listen: %v\n", err)
 	}
 
 	s := grpc.NewServer()
 	greetpb.RegisterGreetServiceServer(s, &server{})
 
 	if err := s.Serve(l); err != nil {
-		log.Fatalf("failed to serve: %v\n", err)
+		log.Printf("failed to serve: %v\n", err)
 	}
 }

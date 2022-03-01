@@ -78,4 +78,46 @@ func main() {
 	}
 
 	fmt.Println("client streaming: ", res2)
+
+	// BiDi Streaming
+	biDiStream, err := c.GreetEveryone(context.Background())
+	if err != nil {
+		log.Fatalf("fail to greet bidi streaming: %v\n", err)
+	}
+
+	waitCh := make(chan struct{})
+
+	go func() {
+		for i := 0; i < 3; i++ {
+			req := &greetpb.GreetEveryoneRequest{
+				Greeting: &greetpb.Greeting{
+					FirstName: "yap " + strconv.Itoa(i),
+				},
+			}
+			if err := biDiStream.Send(req); err != nil {
+				log.Fatalf("failed to send bidi streaming: %v", err)
+			}
+		}
+		if err := biDiStream.CloseSend(); err != nil {
+			log.Fatalf("failed to close client stream: %v", err)
+		}
+	}()
+
+	go func() {
+		for {
+			res, err := biDiStream.Recv()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatalf("failed to receive bidi streaming: %v", err)
+				break
+			}
+
+			fmt.Println("bidi streaming: ", res)
+		}
+		close(waitCh)
+	}()
+
+	<-waitCh
 }
