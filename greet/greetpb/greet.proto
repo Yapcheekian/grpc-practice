@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+package greetpb;
+option go_package="greet/greetpb";
+
+service GreetService{}
