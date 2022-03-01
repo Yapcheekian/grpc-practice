@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strconv"
 
 	"github.com/Yapcheekian/grpc-practice/greet/greetpb"
 	"google.golang.org/grpc"
@@ -32,7 +33,7 @@ func main() {
 
 	fmt.Println("unary: ", res)
 
-	// Streaming server
+	// Server Streaming
 	stream, err := c.GreetManyTimes(context.Background(), &greetpb.GreetManyTimesRequest{
 		Greeting: &greetpb.Greeting{
 			FirstName: "yap",
@@ -51,6 +52,30 @@ func main() {
 			log.Fatalf("faild to receive stream: %v\n", err)
 		}
 
-		fmt.Println("steam: ", msg)
+		fmt.Println("server steaming: ", msg)
 	}
+
+	// Client streaming
+	clientStream, err := c.LongGreet(context.Background())
+	if err != nil {
+		log.Fatalf("failed to greet client streaming: %v\n", err)
+	}
+
+	for i := 0; i < 3; i++ {
+		req := &greetpb.LongGreetRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "yap " + strconv.Itoa(i),
+			},
+		}
+		if err := clientStream.Send(req); err != nil {
+			log.Fatalf("failed to send client stream: %v\n", err)
+		}
+	}
+
+	res2, err := clientStream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("failed to close client stream: %v\n", err)
+	}
+
+	fmt.Println("client streaming: ", res2)
 }
