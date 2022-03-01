@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -18,5 +19,14 @@ func main() {
 
 	c := greetpb.NewGreetServiceClient(conn)
 
-	fmt.Printf("%f", c)
+	res, err := c.Greet(context.Background(), &greetpb.GreetRequest{
+		Greeting: &greetpb.Greeting{
+			FirstName: "yap",
+		},
+	})
+	if err != nil {
+		log.Fatalf("failed to greet unary: %v", err)
+	}
+
+	fmt.Println(res)
 }
