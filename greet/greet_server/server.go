@@ -21,7 +21,7 @@ type server struct {
 func (*server) Greet(ctx context.Context, in *greetpb.GreetRequest) (*greetpb.GreetReponse, error) {
 	firstName := in.GetGreeting().FirstName
 	if firstName == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "first name input is required")
+		return nil, status.Error(codes.InvalidArgument, "first name input is required")
 	}
 	result := "Hello " + firstName
 	res := greetpb.GreetReponse{
@@ -38,7 +38,7 @@ func (*server) GreetManyTimes(in *greetpb.GreetManyTimesRequest, stream greetpb.
 			Result: "Hello " + firstName + " number " + strconv.Itoa(i),
 		}
 		if err := stream.Send(res); err != nil {
-			return status.Errorf(codes.Internal, err.Error())
+			return status.Error(codes.Internal, err.Error())
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -57,7 +57,7 @@ func (*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
 				})
 			}
 			log.Printf("failed to receive client stream: %v\n", err)
-			return status.Errorf(codes.Internal, err.Error())
+			return status.Error(codes.Internal, err.Error())
 		}
 
 		firstName := req.GetGreeting().FirstName
@@ -73,7 +73,7 @@ func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) er
 				return nil
 			}
 			log.Printf("failed to receive bidi client stream: %v\n", err)
-			return status.Errorf(codes.Internal, err.Error())
+			return status.Error(codes.Internal, err.Error())
 		}
 
 		firstName := req.GetGreeting().FirstName
@@ -83,8 +83,26 @@ func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) er
 			Result: result,
 		}
 		if err := stream.Send(res); err != nil {
-			return status.Errorf(codes.Internal, err.Error())
+			return status.Error(codes.Internal, err.Error())
 		}
+	}
+}
+
+func (*server) GreetWithDeadline(ctx context.Context, in *greetpb.GreetWithDeadlineRequest) (*greetpb.GreetWithDeadlineResponse, error) {
+	select {
+	case <-ctx.Done():
+		return nil, status.Error(codes.DeadlineExceeded, "deadline exceeded")
+	default:
+		firstName := in.GetGreeting().FirstName
+		if firstName == "" {
+			return nil, status.Error(codes.InvalidArgument, "first name input is required")
+		}
+		result := "Hello " + firstName
+		res := greetpb.GreetWithDeadlineResponse{
+			Result: result,
+		}
+
+		return &res, nil
 	}
 }
 

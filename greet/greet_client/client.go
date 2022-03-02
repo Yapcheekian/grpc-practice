@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"strconv"
+	"time"
 
 	"github.com/Yapcheekian/grpc-practice/greet/greetpb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 )
@@ -34,7 +35,7 @@ func main() {
 		if ok {
 			// user error
 			fmt.Println(respErr.Message())
-			os.Exit(1)
+			return
 		} else {
 			log.Fatalf("failed to greet unary: %v\n", err)
 		}
@@ -129,4 +130,30 @@ func main() {
 	}()
 
 	<-waitCh
+
+	// Unary with deadline
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	resDeadline, err := c.GreetWithDeadline(ctx, &greetpb.GreetWithDeadlineRequest{
+		Greeting: &greetpb.Greeting{
+			FirstName: "yap",
+		},
+	})
+	if err != nil {
+		respErr, ok := status.FromError(err)
+		if ok {
+			if respErr.Code() == codes.DeadlineExceeded {
+				fmt.Println("timeout was hit, deadline exceeded")
+			} else {
+				fmt.Println(respErr.Message())
+			}
+			return
+		} else {
+			log.Fatalf("failed to greet unary: %v\n", err)
+		}
+	}
+
+	fmt.Println("unary with deadline: ", resDeadline)
 }
