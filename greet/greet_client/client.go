@@ -11,12 +11,17 @@ import (
 	"github.com/Yapcheekian/grpc-practice/greet/greetpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
 
 func main() {
-	conn, err := grpc.Dial("localhost:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	creds, err := credentials.NewClientTLSFromFile("ssl/ca.crt", "")
+	if err != nil {
+		log.Fatalf("failed to load tls from file: %v", err)
+	}
+
+	conn, err := grpc.Dial("localhost:50052", grpc.WithTransportCredentials(creds))
 	if err != nil {
 		log.Fatalf("failed to dial: %v", err)
 	}
