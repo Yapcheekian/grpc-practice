@@ -10,6 +10,8 @@ import (
 
 	"github.com/Yapcheekian/grpc-practice/greet/greetpb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type server struct {
@@ -18,6 +20,9 @@ type server struct {
 
 func (*server) Greet(ctx context.Context, in *greetpb.GreetRequest) (*greetpb.GreetReponse, error) {
 	firstName := in.GetGreeting().FirstName
+	if firstName == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "first name input is required")
+	}
 	result := "Hello " + firstName
 	res := greetpb.GreetReponse{
 		Result: result,
@@ -33,7 +38,7 @@ func (*server) GreetManyTimes(in *greetpb.GreetManyTimesRequest, stream greetpb.
 			Result: "Hello " + firstName + " number " + strconv.Itoa(i),
 		}
 		if err := stream.Send(res); err != nil {
-			return err
+			return status.Errorf(codes.Internal, err.Error())
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -52,7 +57,7 @@ func (*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
 				})
 			}
 			log.Printf("failed to receive client stream: %v\n", err)
-			return err
+			return status.Errorf(codes.Internal, err.Error())
 		}
 
 		firstName := req.GetGreeting().FirstName
@@ -68,7 +73,7 @@ func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) er
 				return nil
 			}
 			log.Printf("failed to receive bidi client stream: %v\n", err)
-			return err
+			return status.Errorf(codes.Internal, err.Error())
 		}
 
 		firstName := req.GetGreeting().FirstName
@@ -78,7 +83,7 @@ func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) er
 			Result: result,
 		}
 		if err := stream.Send(res); err != nil {
-			return err
+			return status.Errorf(codes.Internal, err.Error())
 		}
 	}
 }

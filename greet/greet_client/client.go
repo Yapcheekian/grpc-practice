@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strconv"
 
 	"github.com/Yapcheekian/grpc-practice/greet/greetpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -28,7 +30,14 @@ func main() {
 		},
 	})
 	if err != nil {
-		log.Fatalf("failed to greet unary: %v\n", err)
+		respErr, ok := status.FromError(err)
+		if ok {
+			// user error
+			fmt.Println(respErr.Message())
+			os.Exit(1)
+		} else {
+			log.Fatalf("failed to greet unary: %v\n", err)
+		}
 	}
 
 	fmt.Println("unary: ", res)
